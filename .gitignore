@@ -74,6 +74,9 @@ spring.log
 *.env
 *.properties
 *.yml
+
+# Except for docker-compose.yml
+!docker-compose.yml
 *.yaml
 
 # Java
