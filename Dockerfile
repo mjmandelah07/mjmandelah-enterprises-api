@@ -1,21 +1,26 @@
-# Use the official Maven image to build the app
-FROM maven:3.8.6-openjdk-17 AS build
-WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvnw clean package
+# Use a Maven image that includes OpenJDK 21 for building the app
+FROM maven:4.0.0-openjdk-21 AS build
 
-# Use a base image that supports Java 23
-FROM openjdk:23-jdk
-
-# Set the working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy the Spring Boot jar file to the container
-COPY target/*.jar /app/app.jar
+# Copy the pom.xml and source code into the container
+COPY . .
 
-# Expose the port Spring Boot will run on
+# Build the application, skipping tests for faster builds
+RUN mvn clean package -DskipTests
+
+# Use the OpenJDK 21 image for running the app
+FROM openjdk:21-jdk-alpine
+
+# Set the working directory for the running container
+WORKDIR /app
+
+# Copy the Spring Boot JAR file from the build stage to the running stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port that the Spring Boot app will run on
 EXPOSE 8080
 
-# Run the Spring Boot app
+# Command to run the Spring Boot application
 ENTRYPOINT ["java", "-jar", "app.jar"]

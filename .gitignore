@@ -73,6 +73,8 @@ spring.log
 .env
 *.env
 *.properties
+# Except for docker-compose.yml
+!application-template.properties
 *.yml
 
 # Except for docker-compose.yml
