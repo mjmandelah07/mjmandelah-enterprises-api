@@ -1,5 +1,7 @@
 package com.mjmandelah_enterprises.app.controller;
 
+import com.mjmandelah_enterprises.app.exception.EmailSendException;
+import com.mjmandelah_enterprises.app.exception.UserCreationException;
 import com.mjmandelah_enterprises.app.model.Role;
 import com.mjmandelah_enterprises.app.model.User;
 import com.mjmandelah_enterprises.app.service.UserService;
@@ -9,6 +11,7 @@ import com.mjmandelah_enterprises.app.dto.SignupRequest;
 import com.mjmandelah_enterprises.app.dto.VerificationRequest;
 import com.mjmandelah_enterprises.app.dto.LoginRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -34,8 +37,9 @@ public class UserController {
      * Endpoint for user registration
      */
     @PostMapping("/signup")
-    public ResponseEntity<User> registerUser(@RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<?> registerUser(@RequestBody SignupRequest signupRequest) {
         try {
+            // Attempt to register the user
             User newUser = userService.registerUser(
                     signupRequest.getFirstName(),
                     signupRequest.getLastName(),
@@ -49,7 +53,7 @@ public class UserController {
             String verificationCode = VerificationCodeGenerator.generateCode();
             newUser.setVerificationCode(verificationCode);
 
-            // Save the user again with the verification code
+            // Save the user with the verification code
             userService.saveUser(newUser);
 
             // Send verification email
@@ -58,12 +62,23 @@ public class UserController {
             emailService.sendSimpleEmail(newUser.getEmail(), subject, body);
 
             return ResponseEntity.ok(newUser);
+
+        } catch (UserCreationException e) {
+            // Handle user creation failure
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("User creation failed: " + e.getMessage());
+
+        } catch (EmailSendException e) {
+            // Handle email sending failure
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body("User created, but email sending failed: " + e.getMessage());
+
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            // Catch any other unexpected exceptions
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
         }
-
     }
-
     /**
      * Endpoint for verifying new user email
      */

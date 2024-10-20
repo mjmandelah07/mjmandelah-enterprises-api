@@ -1,5 +1,9 @@
-# Use a Maven image that includes OpenJDK 21 for building the app
-FROM maven:4.0.0-openjdk-21 AS build
+# Use an Amazon Corretto Maven image for building the app
+FROM amazoncorretto:21 AS build
+
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven
 
 # Set the working directory in the container
 WORKDIR /app
@@ -10,8 +14,8 @@ COPY . .
 # Build the application, skipping tests for faster builds
 RUN mvn clean package -DskipTests
 
-# Use the OpenJDK 21 image for running the app
-FROM openjdk:21-jdk-alpine
+# Use the Amazon Corretto 21 image for running the app
+FROM amazoncorretto:21
 
 # Set the working directory for the running container
 WORKDIR /app
